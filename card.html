@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday, Janik!</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            background: radial-gradient(circle at center, #1e96c8 0%, #0f4c6e 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            perspective: 1500px;
+            transition: background 1.5s ease;
+        }
+        body.night-show {
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .star {
+            position: fixed;
+            width: 3px; height: 3px;
+            background: #fff;
+            border-radius: 50%;
+            opacity: 0.35;
+            animation: twinkle 2.2s infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes twinkle {
+            from { opacity: 0.2; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1.4); }
+        }
+        .hint {
+            position: absolute;
+            top: -85px; left: -95px;
+            color: #fff;
+            font-family: 'Brush Script MT', cursive, sans-serif;
+            font-size: 32px;
+            pointer-events: none;
+            transition: opacity 0.4s;
+            animation: bounce 1.8s infinite;
+            z-index: 20;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .hint.hidden { opacity: 0; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .card-wrapper {
+            position: relative;
+            width: 350px; height: 495px;
+            transform-style: preserve-3d;
+            transition: transform 1.2s ease, opacity 1s ease;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .card-wrapper.open { transform: translateX(175px) rotate(-2deg); }
+        .card-wrapper.faded { opacity: 0.15; pointer-events: none; }
+        @media (max-width: 760px) {
+            .card-wrapper.open { transform: translateX(0) scale(0.92); }
+        }
+
+        .card-front, .card-inside-right {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.35);
+        }
+        .card-front {
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            transition: transform 1.3s ease;
+            z-index: 10;
+        }
+        .card-wrapper.open .card-front { transform: rotateY(-180deg); }
+        .front-face, .front-back {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+        }
+        .front-face {
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+        .front-title {
+            border-top: 3px dotted #334155;
+            border-bottom: 3px dotted #334155;
+            padding: 12px 20px;
+            font-size: 22px; font-weight: bold;
+            letter-spacing: 2px; color: #1e293b;
+            margin-bottom: 18px;
+        }
+        .front-name { font-family: 'Brush Script MT', cursive, sans-serif; font-size: 48px; color: #198cb8; }
+        .front-back { transform: rotateY(180deg); background: #f8fafc; overflow: hidden; }
+        .balloon {
+            position: absolute; width: 78px; height: 92px;
+            border-radius: 50%; opacity: 0.85; mix-blend-mode: multiply;
+        }
+        .string { position: absolute; width: 1.5px; height: 220px; background: #fbbf24; top: 92px; left: 50%; }
+        .b1 { background: #1d7096; top: 155px; left: 22px; }
+        .b2 { background: #fbbf24; top: 162px; left: 85px; }
+        .b3 { background: #2dd4bf; top: 132px; left: 145px; }
+        .b4 { background: #f43f5e; top: 185px; left: 205px; }
+        .card-inside-right {
+            background: #ffffff; padding: 28px 26px;
+            display: flex; flex-direction: column; justify-content: space-between; z-index: 5;
+        }
+        .header-box {
+            border-top: 3px dotted #334155; border-bottom: 3px dotted #334155;
+            padding: 7px 0; text-align: center; font-weight: bold; font-size: 14.5px; color: #1e293b;
+        }
+        .greeting { font-family: 'Brush Script MT', cursive, sans-serif; font-size: 32px; color: #0f172a; margin-top: 10px; }
+        .message { font-size: 14px; line-height: 1.55; color: #334155; margin-top: 6px; }
+        .signature { font-family: 'Brush Script MT', cursive, sans-serif; font-size: 27px; color: #198cb8; text-align: right; margin-top: 4px; }
+
+        .actions-box { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; flex-direction: column; gap: 6px; }
+        .action-row { display: flex; align-items: center; justify-content: space-between; }
+        .wish-label { font-size: 12px; color: #64748b; font-weight: 600; }
+        .mini-btn {
+            background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 20px;
+            padding: 5px 12px; font-size: 12.5px; cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .mini-btn:hover { background: #e2e8f0; transform: scale(1.03); }
+        .flame { display: inline-block; animation: flicker 0.4s infinite alternate; }
+        @keyframes flicker {
+            from { transform: scale(1) rotate(-3deg); opacity: 0.9; }
+            to { transform: scale(1.15) rotate(3deg); opacity: 1; }
+        }
+        .gift-modal {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .gift-modal.active { display: flex; }
+        .gift-card {
+            background: #fff; padding: 26px; border-radius: 16px; max-width: 400px; width: 92%;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: popIn 0.35s ease;
+        }
+        .luck-badge {
+            background: #0f172a; border: 1px solid #334155; color: #38bdf8;
+            padding: 14px; border-radius: 10px; font-family: 'Consolas', monospace; font-size: 13px;
+            margin-bottom: 16px; min-height: 105px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 8px;
+        }
+        .progress-bar { width: 100%; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+        .progress-fill { width: 5%; height: 100%; background: #22c55e; transition: width 0.15s linear; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .ctrl-btn {
+            background: #0284c7; color: #fff; border: none; padding: 10px 20px;
+            border-radius: 30px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: transform 0.1s ease, background 0.2s;
+        }
+        .err-chip {
+            background: #ef4444; color: #fff; border: none; padding: 6px 11px;
+            border-radius: 6px; font-family: monospace; font-size: 11.5px; cursor: pointer;
+            animation: shake 0.25s infinite alternate;
+        }
+        @keyframes shake { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+        .simon-btn {
+            width: 48px; height: 48px; border-radius: 10px; border: 2px solid #475569;
+            font-family: monospace; font-size: 15px; font-weight: bold; color: #fff;
+            cursor: pointer; opacity: 0.65; transition: all 0.15s;
+        }
+        .simon-btn.lit { opacity: 1; transform: scale(1.15); box-shadow: 0 0 18px currentColor; border-color: #fff; }
+        .finale-overlay {
+            position: fixed; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; pointer-events: none;
+            opacity: 0; transform: scale(0.7);
+            transition: opacity 1.4s ease, transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 1500; text-align: center; padding: 20px;
+        }
+        .finale-overlay.visible { opacity: 1; transform: scale(1); }
+        .love-title {
+            font-family: 'Brush Script MT', cursive, sans-serif;
+            font-size: clamp(44px, 7vw, 82px); color: #ffffff;
+            text-shadow: 0 0 25px #38bdf8, 0 0 50px #0284c7, 0 4px 12px rgba(0,0,0,0.6);
+            animation: pulseGlow 2.2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            from { text-shadow: 0 0 20px #38bdf8, 0 0 40px #0284c7; transform: scale(1); }
+            to { text-shadow: 0 0 35px #f43f5e, 0 0 65px #fbbf24; transform: scale(1.04); }
+        }
+        .designed-by {
+            position: fixed; bottom: 22px; font-family: 'Consolas', monospace;
+            font-size: 15px; letter-spacing: 2px; color: #94a3b8;
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 1.5s ease 0.8s, transform 1.5s ease 0.8s; z-index: 1500;
+        }
+        .designed-by.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+    <canvas id="fx"></canvas>
+    <div class="finale-overlay" id="finaleOverlay">
+        <div class="love-title">Janik, we love you! ❤️</div>
+        <div style="color: #bae6fd; font-size: 20px; margin-top: 10px; font-weight: 500;">Wir lieben dich, Janik! 🎉</div>
+    </div>
+    <div class="designed-by" id="designedBy">Designed by Vladik</div>
+
+    <div class="gift-modal" id="giftModal">
+        <div class="gift-card">
+            <div style="font-size: 40px; margin-bottom: 6px;">💻🚀</div>
+            <h3 style="color: #1e293b; margin-bottom: 6px;">IT Career & Tech Quest!</h3>
+            <p style="color: #334155; font-size: 13px; line-height: 1.45; margin-bottom: 12px;">
+                <strong>Lieber Janik,</strong><br>
+                ich wünsche dir viel Erfolg, spannende Projekte, sauberen Code ohne Bugs und jede Menge Glück in der IT-Welt! 🥳
+            </p>
+            <div class="luck-badge">
+                <div style="font-size: 11px; color: #94a3b8;" id="questStepLabel">[STEP 1/5] Evasive Bug</div>
+                <div id="questTaskText">🐞 Wild Bug detected! Try to catch it!</div>
+                <div id="miniGameArea" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:4px;"></div>
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center; min-height: 44px;" id="mainActionWrap">
+                <button class="ctrl-btn" id="boostBtn">🔨 Catch & Fix Bug</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-wrapper" id="card">
+        <div class="hint" id="hint">
+            Hover over me!
+            <svg width="70" height="70" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="4">
+                <path d="M15,15 Q55,20 75,75" />
+                <polyline points="55,70 76,78 84,56" />
+            </svg>
+        </div>
+        <div class="card-front">
+            <div class="front-face">
+                <div class="front-title">ALLES GUTE</div>
+                <div class="front-name">für Janik! 🎈</div>
+            </div>
+            <div class="front-back">
+                <div class="balloon b1"><div class="string"></div></div>
+                <div class="balloon b2"><div class="string"></div></div>
+                <div class="balloon b3"><div class="string"></div></div>
+                <div class="balloon b4"><div class="string"></div></div>
+            </div>
+        </div>
+        <div class="card-inside-right">
+            <div>
+                <div class="header-box">ALLES GUTE ZUM GEBURTSTAG</div>
+                <div class="greeting">Lieber Janik,</div>
+                <p class="message">
+                    zu deinem Geburtstag wünsche ich dir von Herzen alles Gute, viel Gesundheit, Glück und unvergessliche Momente!<br><br>
+                    Mögen all deine Wünsche und Träume in diesem neuen Lebensjahr in Erfüllung gehen. Feier schön!
+                </p>
+            </div>
+            <div>
+                <div class="signature">Herzliche Grüße! 🎉</div>
+                <div class="actions-box">
+                    <div class="action-row">
+                        <span class="wish-label" id="wishText">Make a wish:</span>
+                        <button class="mini-btn" id="candleBtn">
+                            <span class="flame" id="flameIcon">🕯️</span>
+                            <span id="candleLabel">Blow out candle</span>
+                        </button>
+                    </div>
+                    <div class="action-row">
+                        <span class="wish-label">IT Surprise:</span>
+                        <button class="mini-btn" id="giftBtn">🎁 Start IT Quest</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let sharedCtx = null;
+
+        function getAudioCtx() {
+            if (!sharedCtx) sharedCtx = new AudioCtx();
+            if (sharedCtx.state === 'suspended') sharedCtx.resume();
+            return sharedCtx;
+        }
+
+        function playTone(freq, duration, type = 'sine', vol = 0.18) {
+            try {
+                const ctx = getAudioCtx();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(vol, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(now); osc.stop(now + duration + 0.02);
+            } catch (e) {}
+        }
+
+        function playSFX(type) {
+            try {
+                const ctx = getAudioCtx();
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    playTone(620, 0.06, 'sine', 0.18);
+                } else if (type === 'dodge') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.14);
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (type === 'zap') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.18);
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(now); osc.stop(now + 0.19);
+                } else if (type === 'error') {
+                    playTone(160, 0.22, 'sawtooth', 0.2);
+                } else if (type === 'success') {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+                        setTimeout(() => playTone(freq, 0.24, 'triangle', 0.18), idx * 75);
+                    });
+                } else if (type === 'boom') {
+                    const bufferSize = ctx.sampleRate * 0.45;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(320, now);
+                    filter.frequency.exponentialRampToValueAtTime(55, now + 0.42);
+
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.32, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
+
+                    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+                    noise.start(now); noise.stop(now + 0.45);
+                }
+            } catch (e) {}
+        }
+
+        const card = document.getElementById('card');
+        const hint = document.getElementById('hint');
+        const candleBtn = document.getElementById('candleBtn');
+        const flameIcon = document.getElementById('flameIcon');
+        const candleLabel = document.getElementById('candleLabel');
+        const wishText = document.getElementById('wishText');
+        const giftBtn = document.getElementById('giftBtn');
+        const giftModal = document.getElementById('giftModal');
+        const boostBtn = document.getElementById('boostBtn');
+        const mainActionWrap = document.getElementById('mainActionWrap');
+        const miniGameArea = document.getElementById('miniGameArea');
+        const questStepLabel = document.getElementById('questStepLabel');
+        const questTaskText = document.getElementById('questTaskText');
+        const progressFill = document.getElementById('progressFill');
+        const finaleOverlay = document.getElementById('finaleOverlay');
+        const designedBy = document.getElementById('designedBy');
+        const canvas = document.getElementById('fx');
+        const ctx = canvas.getContext('2d');
+
+        for (let i = 0; i < 45; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            s.style.left = Math.random() * 100 + 'vw';
+            s.style.top = Math.random() * 100 + 'vh';
+            s.style.animationDelay = (Math.random() * 2.5) + 's';
+            document.body.appendChild(s);
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let confettiParticles = [];
+        let rockets = [];
+        let sparks = [];
+        let firstOpened = false;
+        let showActive = false;
+
+        function spawnConfetti(x, y, count) {
+            const colors = ['#f43f5e', '#fbbf24', '#2dd4bf', '#38bdf8', '#a855f7', '#ffffff'];
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 9 + 3;
+                confettiParticles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 4,
+                    size: Math.random() * 7 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 130
+                });
+            }
+        }
+
+        function launchRocket() {
+            const hue = Math.floor(Math.random() * 360);
+            rockets.push({
+                x: Math.random() * (canvas.width * 0.7) + canvas.width * 0.15,
+                y: canvas.height,
+                vx: (Math.random() - 0.5) * 3,
+                vy: -(Math.random() * 5 + 11),
+                targetY: Math.random() * (canvas.height * 0.35) + 70,
+                hue: hue,
+                trail: []
+            });
+        }
+
+        function explodeFirework(x, y, hue) {
+            playSFX('boom');
+            const count = 105;
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 / count) * i + (Math.random() * 0.15);
+                const speed = Math.random() * 6.5 + 1.5;
+                sparks.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    alpha: 1,
+                    decay: Math.random() * 0.015 + 0.011,
+                    hue: hue + (Math.random() * 35 - 17),
+                    trail: []
+                });
+            }
+        }
+
+        function animate() {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                if (p.life <= 0) confettiParticles.splice(i, 1);
+            }
+
+            for (let i = rockets.length - 1; i >= 0; i--) {
+                const r = rockets[i];
+                r.trail.push({ x: r.x, y: r.y });
+                if (r.trail.length > 8) r.trail.shift();
+                r.x += r.vx; r.y += r.vy; r.vy += 0.16;
+
+                ctx.beginPath();
+                for (let j = 0; j < r.trail.length; j++) ctx.lineTo(r.trail[j].x, r.trail[j].y);
+                ctx.strokeStyle = `hsl(${r.hue}, 100%, 70%)`;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                if (r.y <= r.targetY || r.vy >= 0) {
+                    explodeFirework(r.x, r.y, r.hue);
+                    rockets.splice(i, 1);
+                }
+            }
+
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const s = sparks[i];
+                s.trail.push({ x: s.x, y: s.y });
+                if (s.trail.length > 5) s.trail.shift();
+                s.vx *= 0.96; s.vy *= 0.96; s.vy += 0.06;
+                s.x += s.vx; s.y += s.vy; s.alpha -= s.decay;
+
+                ctx.beginPath();
+                for (let j = 0; j < s.trail.length; j++) ctx.lineTo(s.trail[j].x, s.trail[j].y);
+                ctx.strokeStyle = `hsla(${s.hue}, 100%, 65%, ${s.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (s.alpha <= 0) sparks.splice(i, 1);
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        function playBirthdaySong() {
+            try {
+                const actx = getAudioCtx();
+                const notes = [
+                    [261.6,0.3],[261.6,0.3],[293.7,0.6],[261.6,0.6],[349.2,0.6],[329.6,1.0],
+                    [261.6,0.3],[261.6,0.3],[293.7,0.6],[261.6,0.6],[392.0,0.6],[349.2,1.0],
+                    [261.6,0.3],[261.6,0.3],[523.3,0.6],[440.0,0.6],[349.2,0.6],[329.6,0.6],[293.7,1.0],
+                    [466.2,0.3],[466.2,0.3],[440.0,0.6],[349.2,0.6],[392.0,0.6],[349.2,1.3]
+                ];
+                let t = actx.currentTime + 0.05;
+                notes.forEach(([f, d]) => {
+                    const o = actx.createOscillator();
+                    const g = actx.createGain();
+                    o.type = 'triangle';
+                    o.frequency.value = f;
+                    g.gain.setValueAtTime(0.26, t);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + d);
+                    o.connect(g); g.connect(actx.destination);
+                    o.start(t); o.stop(t + d);
+                    t += d + 0.06;
+                });
+            } catch (e) {}
+        }
+
+        function startGrandFinale() {
+            if (showActive) return;
+            showActive = true;
+            document.body.classList.add('night-show');
+            playBirthdaySong();
+
+            launchRocket();
+            setTimeout(launchRocket, 350);
+            const showInterval = setInterval(() => {
+                launchRocket();
+                if (Math.random() > 0.4) setTimeout(launchRocket, 250);
+            }, 850);
+
+            setTimeout(() => {
+                clearInterval(showInterval);
+                card.classList.add('faded');
+                finaleOverlay.classList.add('visible');
+                designedBy.classList.add('visible');
+                playSFX('success');
+                launchRocket();
+                setTimeout(launchRocket, 400);
+            }, 14500);
+        }
+
+        function openCard() {
+            if (!firstOpened) {
+                firstOpened = true;
+                playSFX('click');
+                card.classList.add('open');
+                hint.classList.add('hidden');
+                spawnConfetti(canvas.width / 2, canvas.height / 2, 130);
+            }
+        }
+
+        card.addEventListener('mouseenter', openCard);
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            openCard();
+        });
+
+        candleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playSFX('click');
+            flameIcon.textContent = '💨';
+            flameIcon.style.animation = 'none';
+            candleLabel.textContent = 'Wish saved!';
+            wishText.textContent = '✨ Now try IT Quest:';
+            spawnConfetti(canvas.width / 2, canvas.height / 2, 45);
+        });
+
+        let questStage = 0;
+        let bugDodges = 0;
+        const maxDodges = 6;
+        const dodgePhrases = Array.of(
+            "🐞 Too slow! Catch me! (1/6)",
+            "💨 404: Button Not Found! (2/6)",
+            "⚡ Nice try, developer! (3/6)",
+            "🏃‍♂️ Almost got it! Keep going! (4/6)",
+            "🔥 One more jump! (5/6)",
+            "😵 Okay, you got me! Click now! (6/6)"
+        );
+
+        giftBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playSFX('click');
+            giftModal.classList.add('active');
+        });
+
+        boostBtn.addEventListener('mouseenter', () => {
+            if (questStage === 0 && bugDodges < maxDodges) {
+                playSFX('dodge');
+                const rx = (Math.random() - 0.5) * 320;
+                const ry = (Math.random() - 0.5) * 220;
+                boostBtn.style.transform = `translate(${rx}px, ${ry}px)`;
+                questTaskText.textContent = dodgePhrases[bugDodges];
+                bugDodges++;
+            }
+        });
+
+        let coffeeLevel = 0;
+        let brewTimer = null;
+
+        function setupCoffeeStage() {
+            questStage = 1;
+            questStepLabel.textContent = "[STEP 2/5] Developer Fuel";
+            questTaskText.textContent = "☕ Hold button to brew espresso (0%)";
+            boostBtn.textContent = "☕ Hold to Brew";
+            boostBtn.style.background = "#d97706";
+            progressFill.style.width = "0%";
+
+            const startBrew = () => {
+                if (questStage !== 1) return;
+                brewTimer = setInterval(() => {
+                    coffeeLevel += 5;
+                    progressFill.style.width = coffeeLevel + "%";
+                    questTaskText.textContent = `☕ Brewing espresso... (${coffeeLevel}%)`;
+                    if (coffeeLevel % 15 === 0) playTone(350 + coffeeLevel * 3, 0.05, 'sine', 0.12);
+                    if (coffeeLevel >= 100) {
+                        clearInterval(brewTimer);
+                        playSFX('success');
+                        setupVirusStage();
+                    }
+                }, 65);
+            };
+            const stopBrew = () => clearInterval(brewTimer);
+
+            boostBtn.onmousedown = startBrew;
+            boostBtn.ontouchstart = startBrew;
+            window.onmouseup = stopBrew;
+            window.ontouchend = stopBrew;
+        }
+
+        function setupVirusStage() {
+            questStage = 2;
+            boostBtn.onmousedown = null;
+            boostBtn.ontouchstart = null;
+            mainActionWrap.style.display = "none";
+            questStepLabel.textContent = "[STEP 3/5] Firewall Defense";
+            questTaskText.textContent = "🦠 Click all 4 viruses to quarantine!";
+            progressFill.style.width = "45%";
+
+            let left = 4;
+            Array.of("[ERR_01]", "[BUG_99]", "[MEM_LEAK]", "[NULL_PTR]").forEach(label => {
+                const chip = document.createElement('button');
+                chip.className = "err-chip";
+                chip.textContent = "🦠 " + label;
+                chip.onclick = () => {
+                    playSFX('zap');
+                    chip.remove();
+                    left--;
+                    if (left === 0) {
+                        playSFX('success');
+                        setupMemoryStage();
+                    }
+                };
+                miniGameArea.appendChild(chip);
+            });
+        }
+
+        function setupMemoryStage() {
+            questStage = 3;
+            questStepLabel.textContent = "[STEP 4/5] Neural Sync";
+            questTaskText.textContent = "🧠 Watch the sequence & repeat it!";
+            progressFill.style.width = "70%";
+
+            const pads = Array.of(
+                { label: "A", color: "#ef4444", freq: 329.6 },
+                { label: "B", color: "#3b82f6", freq: 392.0 },
+                { label: "C", color: "#eab308", freq: 440.0 },
+                { label: "D", color: "#22c55e", freq: 523.3 }
+            );
+            const buttons = Array.of();
+            pads.forEach((p) => {
+                const b = document.createElement('button');
+                b.className = "simon-btn";
+                b.style.background = p.color;
+                b.textContent = p.label;
+                buttons.push(b);
+                miniGameArea.appendChild(b);
+            });
+
+            const sequence = Array.of(0, 2, 1, 3);
+            let userStep = 0;
+            let locked = true;
+
+            function flashPad(idx) {
+                buttons[idx].classList.add('lit');
+                playTone(pads[idx].freq, 0.25, 'triangle', 0.2);
+                setTimeout(() => buttons[idx].classList.remove('lit'), 320);
+            }
+
+            function playSequence() {
+                locked = true;
+                userStep = 0;
+                questTaskText.textContent = "👀 Memorize the pattern...";
+                sequence.forEach((padIdx, stepIdx) => {
+                    setTimeout(() => flashPad(padIdx), (stepIdx + 1) * 550);
+                });
+                setTimeout(() => {
+                    locked = false;
+                    questTaskText.textContent = "👉 Your turn! Repeat the 4 keys:";
+                }, (sequence.length + 1) * 550);
+            }
+
+            buttons.forEach((btn, idx) => {
+                btn.onclick = () => {
+                    if (locked) return;
+                    flashPad(idx);
+                    if (idx === sequence[userStep]) {
+                        userStep++;
+                        if (userStep === sequence.length) {
+                            locked = true;
+                            playSFX('success');
+                            setupFinalDeployStage();
+                        }
+                    } else {
+                        playSFX('error');
+                        questTaskText.textContent = "❌ Wrong key! Watch again...";
+                        setTimeout(playSequence, 900);
+                    }
+                };
+            });
+
+            setTimeout(playSequence, 400);
+        }
+
+        function setupFinalDeployStage() {
+            questStage = 4;
+            miniGameArea.innerHTML = "";
+            progressFill.style.width = "100%";
+            questStepLabel.textContent = "[STEP 5/5] All Systems Go!";
+            questTaskText.textContent = "✅ All checks passed! Ready for release.";
+            mainActionWrap.style.display = "flex";
+            boostBtn.textContent = "🚀 Deploy Birthday 2.0";
+            boostBtn.style.background = "#16a34a";
+        }
+
+        boostBtn.addEventListener('click', () => {
+            if (questStage === 0) {
+                playSFX('success');
+                boostBtn.style.transform = 'translate(0, 0)';
+                setupCoffeeStage();
+            } else if (questStage === 4) {
+                questStage = 5;
+                playSFX('success');
+                boostBtn.disabled = true;
+                questStepLabel.textContent = "🏆 ACHIEVEMENT UNLOCKED!";
+                questTaskText.innerHTML = "🛡️ +100% Bug-Free Year, Clean Code & Dream IT Projects!";
+
+                let secLeft = 4;
+                boostBtn.textContent = `⏳ Launching show in ${secLeft}s...`;
+                const countdown = setInterval(() => {
+                    secLeft--;
+                    if (secLeft > 0) {
+                        boostBtn.textContent = `⏳ Launching show in ${secLeft}s...`;
+                    } else {
+                        clearInterval(countdown);
+                        giftModal.classList.remove('active');
+                        giftBtn.textContent = "✅ IT Quest Completed!";
+                        startGrandFinale();
+                    }
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
